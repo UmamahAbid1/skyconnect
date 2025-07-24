@@ -1,0 +1,91 @@
+<!DOCTYPE html> 
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Add Review</title>
+  <style>
+    body {
+      font-family: Arial;
+      background: #f0f0f0;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+    }
+    form {
+      background: white;
+      padding: 2em;
+      border-radius: 8px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    }
+    input, textarea {
+      margin: 10px 0;
+      padding: 10px;
+      width: 100%;
+    }
+    button {
+      padding: 10px;
+      background: steelblue;
+      color: white;
+      border: none;
+    }
+  </style>
+</head>
+<body>
+  <form id="reviewForm">
+    <h2>Leave a Review</h2>
+    <input type="number" id="flightId" placeholder="Flight ID" required />
+    <input type="number" id="rating" placeholder="Rating (1-5)" min="1" max="5" required />
+    <textarea id="comments" placeholder="Your review" required></textarea>
+    <button type="submit">Submit Review</button>
+  </form>
+
+  <script>
+    document.addEventListener("DOMContentLoaded", function () {
+      const userStr = localStorage.getItem("user");
+      let user;
+  
+      try {
+        user = JSON.parse(userStr);
+      } catch (e) {
+        user = null;
+      }
+  
+      console.log("User loaded:", user); // For debugging
+  
+      // Redirect if not logged in or no UserID
+      if (!user || !user.UserID) {
+        alert("Login required");
+        window.location.href = "log-in.html";
+        return;
+      }
+  
+      // Form submission
+      document.getElementById("reviewForm").addEventListener("submit", async function (e) {
+        e.preventDefault();
+  
+        const review = {
+          userId: user.UserID,
+          flightId: document.getElementById("flightId").value,
+          rating: document.getElementById("rating").value,
+          comments: document.getElementById("comments").value
+        };
+  
+        try {
+          const res = await fetch("http://localhost:3000/api/reviews", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(review)
+          });
+          const data = await res.json();
+          alert(data.message);
+        } catch (err) {
+          alert("Review failed");
+        }
+      });
+    });
+  </script>
+  
+</body>
+</html>

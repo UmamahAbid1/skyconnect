@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>My Bookings - SkyConnect</title>
+  <link rel="stylesheet" href="stylesky.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet" />
+</head>
+<body>
+
+  <!-- Navbar -->
+  <header class="navbar">
+    <div class="container">
+      <h1 class="logo">SkyConnect</h1>
+      <nav>
+        <a href="skyconnect.html">Flights</a>
+        <a href="bookings.html">My Bookings</a>
+        <a href="reviews.html">Reviews</a>
+        <a href="#" onclick="logout()">Logout</a>
+      </nav>
+    </div>
+  </header>
+
+  <!-- Page Title -->
+  <section class="section">
+    <div class="container">
+      <h2 class="section-title">Your Bookings</h2>
+      <div id="bookingList" class="flights-grid"></div>
+    </div>
+  </section>
+
+  <!-- Logout Script -->
+  <script>
+    function logout() {
+      localStorage.removeItem("user");
+      window.location.href = "log-in.html";
+    }
+
+    const user = JSON.parse(localStorage.getItem("user"));
+    console.log("User from localStorage:", user);
+
+    if (!user) {
+      alert("Login required");
+      window.location.href = "log-in.html";
+    }
+
+    async function loadBookings() {
+  try {
+    const res = await fetch(`http://localhost:3000/api/bookings/${user.UserID}`);
+    const bookings = await res.json();
+    const list = document.getElementById("bookingList");
+    list.innerHTML = "";
+
+    if (bookings.length === 0) {
+      list.innerHTML = `<p>You haven't booked any flights yet.</p>`;
+      return;
+    }
+
+    bookings.forEach(b => {
+        if (b.Status_of_flight === 'Cancelled') {
+  return; // ⛔ skip rendering this cancelled booking
+}
+
+      const card = document.createElement("div");
+      card.classList.add("flight-card");
+      card.innerHTML = `
+        <h4>${b.Airline}</h4>
+        <p><strong>From:</strong> ${b.Source1}</p>
+        <p><strong>To:</strong> ${b.Destination}</p>
+        <p><strong>Departure:</strong> ${new Date(b.Departure).toLocaleString()}</p>
+        <p><strong>Seat:</strong> ${b.SeatNo}</p>
+        <p><strong>Status:</strong> ${b.Status_of_flight || 'Booked'}</p>
+      `;
+
+      if (b.Status_of_flight !== 'Cancelled') {
+        const cancelBtn = document.createElement("button");
+        cancelBtn.textContent = "Cancel Booking";
+        cancelBtn.onclick = () => cancelBooking(b.BookingID);
+        card.appendChild(cancelBtn);
+      }
+
+      list.appendChild(card);
+    });
+
+  } catch (err) {
+    console.error("Error loading bookings:", err);
+    document.getElementById("bookingList").innerHTML =
+      `<p style="color:red;">Failed to load bookings.</p>`;
+  }
+}
+
+
+loadBookings();
+async function cancelBooking(bookingId) {
+  if (!confirm("Are you sure you want to cancel this booking?")) return;
+
+  try {
+    const res = await fetch("http://localhost:3000/api/cancel-booking", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({ bookingId })
+    });
+
+    const data = await res.json();
+    alert(data.message);
+    loadBookings(); // reload the list
+
+  } catch (err) {
+    console.error("Cancel failed:", err);
+    alert("Cancellation failed. Please try again.");
+  }
+}
+
+
+  </script>
+</body>
+</html>

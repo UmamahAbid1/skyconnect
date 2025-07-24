@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Login - SkyConnect</title>
+  <link rel="stylesheet" href="stylesky.css" />
+  <style>
+    body {
+      font-family: Arial;
+      background: #f0f0f0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 2rem;
+    }
+    form {
+      background: white;
+      padding: 2em;
+      border-radius: 8px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+      width: 100%;
+      max-width: 400px;
+      margin-bottom: 2rem;
+    }
+    input {
+      margin: 10px 0;
+      padding: 10px;
+      width: 100%;
+    }
+    button {
+      padding: 10px;
+      background: steelblue;
+      color: white;
+      border: none;
+      width: 100%;
+    }
+
+    .flights-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 1.5rem;
+      width: 100%;
+      max-width: 1000px;
+    }
+
+    .flight-card {
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 6px 16px rgba(0,0,0,0.1);
+      padding: 1.5rem;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+
+    .flight-card h4 {
+      color: #2563eb;
+      margin-bottom: 0.5rem;
+    }
+
+    .flight-card p {
+      margin: 0.25rem 0;
+      color: #444;
+    }
+
+    .flight-card button {
+      margin-top: 1rem;
+      background: #2563eb;
+      color: white;
+      padding: 0.6rem;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+
+    .flight-card button:hover {
+      background: #1e40af;
+    }
+
+    #flights-title {
+      text-align: center;
+      font-size: 1.8rem;
+      margin-bottom: 1rem;
+    }
+  </style>
+</head>
+<body>
+  <header class="navbar">
+  <div class="container">
+  <nav>
+    <a href="bookings.html">My Bookings</a>
+    <a href="reviews.html">Reviews</a>
+    <a href="#" onclick="logout()">Logout</a>
+  </nav>
+</div>
+</header>
+  <!-- Login Form -->
+  <form id="loginForm">
+    <h2>Login to SkyConnect</h2>
+    <input type="email" id="email" placeholder="Email" required />
+    <input type="password" id="password" placeholder="Password" required />
+    <button type="submit">Login</button>
+  </form>
+
+  <!-- Flights Section (Visible after login) -->
+  <div id="flights-section" style="display: none; width: 100%; max-width: 1200px;">
+    <h2 id="flights-title">Available Flights</h2>
+    <div id="flightsList" class="flights-grid"></div>
+  </div>
+  <div id="userNav" style="display:none; margin-top: 20px;">
+    <a href="skyconnect.html" class="btn-primary">Go to Flights</a>
+    <a href="bookings.html" class="btn-primary">View My Bookings</a>
+  </div>
+  
+  <script>
+    document.getElementById('loginForm').addEventListener('submit', async function (e) {
+      e.preventDefault();
+      const email = document.getElementById('email').value;
+
+      try {
+        const res = await fetch("http://localhost:3000/api/login", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email }),
+        });
+
+        if (!res.ok) {
+          alert("Login failed.");
+          return;
+        }
+
+        const user = await res.json();
+        localStorage.setItem("user", JSON.stringify(user));
+        alert(`Welcome, ${user.username}`);
+
+        document.getElementById("loginForm").style.display = "none";
+        document.getElementById("flights-section").style.display = "block";
+
+        loadFlights(user.UserID);
+
+      } catch (err) {
+        console.error(err);
+        alert("Error logging in.");
+      }
+    });
+
+    async function loadFlights(userId) {
+      try {
+        const res = await fetch("http://localhost:3000/api/flights");
+        const flights = await res.json();
+
+        const list = document.getElementById("flightsList");
+        list.innerHTML = "";
+
+        flights.forEach(flight => {
+          const div = document.createElement("div");
+          div.classList.add("flight-card");
+          div.innerHTML = `
+            <h4>${flight.Airline}</h4>
+            <p><strong>From:</strong> ${flight.Source1}</p>
+            <p><strong>To:</strong> ${flight.Destination}</p>
+            <p><strong>Departure:</strong> ${new Date(flight.Departure).toLocaleString()}</p>
+            <p><strong>Status:</strong> ${flight.Status_of_flight}</p>
+            <button onclick="bookFlight(${userId}, ${flight.FlightID})">Book Flight</button>
+          `;
+          list.appendChild(div);
+        });
+
+      } catch (err) {
+        console.error("Could not load flights", err);
+      }
+    }
+    async function bookFlight(userId, flightId) {
+  console.log("📤 Trying to book flight:", { userId, flightId });
+
+  try {
+    const res = await fetch("http://localhost:3000/api/book", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ userId, flightId })
+    });
+
+    console.log("📥 Booking response status:", res.status);
+
+    const data = await res.json();
+    console.log("📦 Response body:", data);
+
+    if (!res.ok) throw new Error(data.message || "Booking failed");
+
+    alert(`${data.message} Your seat: ${data.seat}`);
+  } catch (err) {
+    console.error("❌ Booking error:", err);
+    alert("Booking failed.");
+  }
+}
+
+
+
+  function logout() {
+    localStorage.removeItem("user");
+    window.location.href = "log-in.html";
+  }
+  
+
+  </script>
+
+</body>
+</html>

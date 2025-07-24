@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SkyConnect - Book Flights Easily</title>
+  <link rel="stylesheet" href="stylesky.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet" />
+</head>
+<body>
+ 
+  <!-- Navbar -->
+  <header class="navbar">
+    <div class="container">
+      <h1 class="logo">SkyConnect</h1>
+      <nav>
+        <a href="#home">Home</a>
+        <a href="#flightsSection">Flights</a>
+        <a href="reviews.html">Reviews</a>
+        <a href="log-in.html">Log-in</a>
+      </nav>          
+    </div>
+  </header>
+
+ <!-- Hero Section -->
+<section  id ="home" class="hero">
+    <div class="overlay">
+      <div class="hero-content">
+        <h2>Book Your Next Flight with Ease</h2>
+        <p>Fast, Reliable, and Affordable Air Travel</p>
+        <a href="log-in.html" class="btn-primary">Login</a>
+      </div>
+    </div>
+  </section>
+  
+
+  <!-- Search Flights -->
+  <section id="search" class="search-section">
+  <div class="container search-container">
+    <h3 class="section-title">Find Your Perfect Flight</h3>
+  <form id="flightSearchForm" class="searchform">
+    <div class="form-group">
+      <label for="from">From</label>
+      <input type="text" id="from" name="from" placeholder="Departure City">
+    </div>
+    <div class="form-group">
+      <label for="to">To</label>
+      <input type="text" id="to" name="to" placeholder="Destination City">
+    </div>
+    <div class="form-group full-width">
+      <button type="submit" class="btn-primary">Search Flights</button>
+    </div>
+  </form>
+</div>
+</section>
+
+<section id="flightsSection" class="flight-display-section">
+  <div class="container">
+    <h2 class="section-title">Available Flights</h2>
+    <div id="flightsList" class="flights-grid"></div>
+  </div>
+</section>
+
+<!-- Modal Popup -->
+<div id="popup" class="modal">
+  <div class="modal-content">
+    <span class="close" onclick="closePopup()">&times;</span>
+    <div id="popupResults"></div>
+  </div>
+</div>
+
+  
+
+  <!-- Featured Destinations -->
+  <section class="section destinations">
+    <div class="container">
+      <h3 class="section-title">Top Destinations</h3>
+      <div class="card-grid">
+        <div class="card">
+          <img src="https://images.unsplash.com/photo-1507525428034-b723cf961d3e" alt="Maldives">
+          <div class="card-info">
+            <h4>Maldives</h4>
+            <p>Starting from $499</p>
+          </div>
+        </div>
+        <div class="card">
+          <img src="https://images.unsplash.com/photo-1543353071-873f17a7a088" alt="Paris">
+          <div class="card-info">
+            <h4>Paris</h4>
+            <p>Starting from $399</p>
+          </div>
+        </div>
+        <div class="card">
+          <img src="https://images.unsplash.com/photo-1505761671935-60b3a7427bad" alt="Tokyo">
+          <div class="card-info">
+            <h4>Tokyo</h4>
+            <p>Starting from $599</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="container footer-content">
+      <div>
+        <h5>Skyconnect</h5>
+        <p>Your trusted flight booking partner.</p>
+      </div>
+      <div class="footer-links">
+        <a href="#">Privacy Policy</a>
+        <a href="#">Terms of Service</a>
+        <a href="reviews.html">Contact</a>
+      </div>
+    </div>
+  </footer>
+
+
+<script>
+  // Load flights initially
+  document.addEventListener("DOMContentLoaded", async () => {
+    const res = await fetch("http://localhost:3000/api/flights");
+    const flights = await res.json();
+    const container = document.getElementById("flightsList");
+
+    flights.forEach(flight => {
+      const div = document.createElement("div");
+      div.classList.add("flight-card");
+      div.innerHTML = `
+        <h4>${flight.Airline}</h4>
+        <p><strong>From:</strong> ${flight.Source1}</p>
+        <p><strong>To:</strong> ${flight.Destination}</p>
+        <p><strong>Departure:</strong> ${new Date(flight.Departure).toLocaleString()}</p>
+        <p><strong>Status:</strong> ${flight.Status_of_flight}</p>
+      `;
+      container.appendChild(div);
+    });
+  });
+
+  // Search form logic
+  document.getElementById("flightSearchForm").addEventListener("submit", async function (e) {
+    e.preventDefault();
+
+    const from = document.getElementById("from").value.toLowerCase();
+    const to = document.getElementById("to").value.toLowerCase();
+
+    try {
+      const res = await fetch("http://localhost:3000/api/flights");
+      const flights = await res.json();
+
+      const matched = flights.filter(f =>
+        f.Source1.toLowerCase().includes(from) &&
+        f.Destination.toLowerCase().includes(to)
+      );
+
+      const resultsDiv = document.getElementById("popupResults");
+      resultsDiv.innerHTML = `<h3>${matched.length} Flight(s) Found</h3>`;
+
+      matched.forEach(f => {
+        resultsDiv.innerHTML += `
+          <p><strong>${f.Airline}</strong><br>
+          ${f.Source1} → ${f.Destination}<br>
+          Departure: ${new Date(f.Departure).toLocaleString()}</p><hr>`;
+      });
+
+      openPopup();
+
+    } catch (err) {
+      console.error(err);
+      alert("Could not fetch flights");
+    }
+  });
+
+  function openPopup() {
+    document.getElementById("popup").style.display = "block";
+  }
+
+  function closePopup() {
+    document.getElementById("popup").style.display = "none";
+  }
+
+  
+</script>
+
+</body>
+</html>
